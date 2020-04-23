@@ -1,3 +1,8 @@
+build/
+lib/
+aws/
+
+
 # Prerequisites
 *.d
 

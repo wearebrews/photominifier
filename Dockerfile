@@ -12,6 +12,8 @@ RUN apk --update add \
 COPY src src
 COPY include include
 COPY Makefile Makefile
+COPY .git .git
+COPY .gitmodules .gitmodules
 COPY CMakeLists.txt CMakeLists.txt
 RUN make build -B --jobs=4
 

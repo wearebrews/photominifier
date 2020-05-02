@@ -8,6 +8,7 @@
 #include "aws/s3/model/ListObjectsRequest.h"
 
 #include "curl/curl.h"
+#include "s3.hpp"
 
 extern "C" {
     #include <jpeglib.h>
@@ -19,6 +20,11 @@ const auto ENDPOINT_URL = "https://fra1.digitaloceanspaces.com";
 const auto CREDENTIALS = Aws::Auth::SimpleAWSCredentialsProvider(TOKEN, SECRET).GetAWSCredentials();
 
 int main() {
+    photorepository::Repository rep;
+    auto photos = rep.list_images();
+    for (auto p : photos) {
+        std::cout << p.file_name << std::endl;
+    }
     Aws::SDKOptions options;
     Aws::InitAPI(options);
     Aws::Client::ClientConfiguration client_config;

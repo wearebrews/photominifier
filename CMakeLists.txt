@@ -18,7 +18,7 @@ endif()
 set(CMAKE_CXX_FLAGS "-Wall -Wextra")
 set(CMAKE_CXX_FLAGS_RELEASE "-O3")
 
-include_directories(includes)
+include_directories(include)
 
 find_package(AWSSDK REQUIRED COMPONENTS s3)
 find_package(JPEG REQUIRED)

@@ -16,7 +16,7 @@ COPY Makefile Makefile
 COPY .git .git
 COPY .gitmodules .gitmodules
 COPY CMakeLists.txt CMakeLists.txt
-RUN make build -j 4
+RUN make build -j 8
 
 FROM alpine:3.10
 WORKDIR /usr/app 

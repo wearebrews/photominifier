@@ -1,10 +1,14 @@
-#include<iostream>
+#include <iostream>
 #include "aws/core/Aws.h"
 #include "aws/core/auth/AWSCredentials.h"
 #include "aws/core/auth/AWSCredentialsProvider.h"
 #include "aws/core/client/ClientConfiguration.h"
 #include "aws/s3/S3Client.h"
 #include "aws/s3/model/ListObjectsRequest.h"
+
+extern "C" {
+    #include <jpeglib.h>
+}
 
 const auto TOKEN = "JVLT6CB42I56VAU7DQWJ";
 const auto SECRET = "gfDWScllR9WAaKfOWbZs3OT4ZIFeKrdWmVaVeiiqJs4";

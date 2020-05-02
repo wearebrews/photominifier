@@ -18,12 +18,11 @@ endif()
 set(CMAKE_CXX_FLAGS "-Wall -Wextra")
 set(CMAKE_CXX_FLAGS_RELEASE "-O3")
 
-
-# I../includes
 include_directories(includes)
 
 find_package(AWSSDK REQUIRED COMPONENTS s3)
 find_package(JPEG REQUIRED)
+find_package(CURL REQUIRED)
 
 
 # puts all .cpp files inside src to the SOURCES variable
@@ -33,4 +32,4 @@ file(GLOB BUILD_STATIC_LIBS lib/*.a)
 # compiles the files defined by SOURCES to generante the executable defined by EXEC
 add_executable(photominifier ${SOURCES})
 
-target_link_libraries(photominifier PRIVATE ${AWSSDK_LINK_LIBRARIES})
+target_link_libraries(photominifier PRIVATE ${AWSSDK_LINK_LIBRARIES} ${CURL_LINK_LIBRARIES})

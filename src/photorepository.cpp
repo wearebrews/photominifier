@@ -14,14 +14,17 @@ using namespace photorepository;
 
 std::vector<Photograph> Repository::list_images() {
     Aws::S3::Model::ListObjectsRequest request;
-    request.WithBucket("verussensus");
+    request.WithBucket("verussensus")
+           .WithPrefix("img/fullsize");
     auto resp = this->s3_client_.ListObjects(request);
     if (resp.IsSuccess()) {
         auto objects = resp.GetResult().GetContents();
         auto output = std::vector<Photograph>(objects.size());
         std::transform(objects.begin(), objects.end(), output.begin(), [](Aws::S3::Model::Object obj) {
-            Photograph p;
-            p.id = obj.GetKey();
+            Photograph p {
+                .id = obj.GetKey(),
+                .file_name = ""
+            };
             return p;
         });
         return output;
@@ -31,23 +34,20 @@ std::vector<Photograph> Repository::list_images() {
     return {}; 
 }
 
+
+
 auto make_s3_client(std::string token, std::string secret, std::string endpoint) {
     Aws::InitAPI({});
     const auto credentials = Aws::Auth::SimpleAWSCredentialsProvider(token, secret).GetAWSCredentials();
     Aws::Client::ClientConfiguration config;
     config.endpointOverride = endpoint;
-    auto c = Aws::S3::S3Client(credentials, config);
-    return c;
+    return Aws::S3::S3Client(credentials, config);
 }
 
 
-Repository::Repository(std::string token, std::string secret, std::string endpoint) : s3_client_(make_s3_client(token, secret, endpoint)) {
-    std::cout << "Hello" << std::endl;
-}
+Repository::Repository(std::string token, std::string secret, std::string endpoint) : s3_client_(make_s3_client(token, secret, endpoint)) {}
 
-Repository::Repository(std::string token, std::string secret) : Repository(token, secret, "https://fra1.digitaloceanspaces.com"){
-    std::cout << "Hello" << std::endl;
-}
+Repository::Repository(std::string token, std::string secret) : Repository(token, secret, "https://fra1.digitaloceanspaces.com"){}
 
 Repository::~Repository() {
     Aws::ShutdownAPI({});

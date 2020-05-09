@@ -8,9 +8,17 @@ const std::string SECRET = [](){ auto s = getenv("SECRET"); return s ? s : "";}(
 
 int main() {
     auto rep = photorepository::Repository(TOKEN, SECRET);
-    auto photos = rep.list_images();
+    auto photos = rep.List("img/fullsize");
     for (auto& p : photos) {
-        std::cout << p.id << std::endl;
+        auto name = p.FileName();
+        std::cout << p.FileName() << std::endl;
+        if (name[name.length()-1] != '/') {
+            try {
+            rep.Download(p);
+            } catch(const std::exception& e) {
+                std::cout << e.what() << std::endl;
+            }
+        }
     }
     return 0;
 }

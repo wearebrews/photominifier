@@ -1,4 +1,6 @@
 FROM alpine:3.10 as build
+
+ARG MAKE_PARALELL=1
 WORKDIR /usr/app
 RUN apk --update add \
  build-base \
@@ -16,7 +18,7 @@ COPY Makefile Makefile
 COPY .git .git
 COPY .gitmodules .gitmodules
 COPY CMakeLists.txt CMakeLists.txt
-RUN make build -j 8
+RUN make build -j ${MAKE_PARALELL}
 
 FROM alpine:3.10
 WORKDIR /usr/app 

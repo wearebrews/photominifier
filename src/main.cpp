@@ -14,9 +14,9 @@ int main() {
         std::cout << p.FileName() << std::endl;
         if (name[name.length()-1] != '/') {
             try {
-            rep.Download(p);
+                rep.Download(p);
             } catch(const std::exception& e) {
-                std::cout << e.what() << std::endl;
+                std::cout << "Error: " << e.what() << std::endl;
             }
         }
     }

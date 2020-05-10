@@ -32,4 +32,4 @@ file(GLOB BUILD_STATIC_LIBS lib/*.a)
 # compiles the files defined by SOURCES to generante the executable defined by EXEC
 add_executable(photominifier ${SOURCES})
 
-target_link_libraries(photominifier PRIVATE ${AWSSDK_LINK_LIBRARIES} ${CURL_LINK_LIBRARIES})
+target_link_libraries(photominifier PRIVATE ${AWSSDK_LINK_LIBRARIES} ${CURL_LINK_LIBRARIES} -lstdc++fs)

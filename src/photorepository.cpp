@@ -12,14 +12,19 @@
 #include <tuple>
 
 
+#include <experimental/filesystem>
+
+
 using namespace photorepository;
 
+constexpr const char* BUCKET = "verussensus";
 
-std::vector<Photograph> Repository::List(std::string prefix) {
+
+std::vector<Photograph> ListPhotographs(std::string prefix, const Aws::S3::S3Client& client) {
     Aws::S3::Model::ListObjectsRequest request;
-    request.WithBucket("verussensus")
+    request.WithBucket(BUCKET)
            .WithPrefix(prefix);
-    auto resp = this->s3_client_.ListObjects(request);
+    auto resp = client.ListObjects(request);
     if (resp.IsSuccess()) {
         auto objects = resp.GetResult().GetContents();
         auto output = std::vector<Photograph>(objects.size());
@@ -33,15 +38,27 @@ std::vector<Photograph> Repository::List(std::string prefix) {
     return {}; 
 }
 
-std::tuple<char*, uint32_t> Repository::Download(const Photograph& photo) {
+std::vector<Photograph> Repository::List(std::string prefix) {
+    return ListPhotographs(prefix, this->s3_client_);
+}
+
+std::tuple<std::shared_ptr<char>, uint32_t> Repository::Download(const Photograph& photo) {
+    namespace fs =  std::experimental::filesystem;
     Aws::S3::Model::GetObjectRequest request;
-    request.WithBucket("verussensus").WithKey(photo.FileName());
+    request.WithBucket(BUCKET).WithKey(photo.FileName());
     auto outcome = this->s3_client_.GetObject(request);
     if (outcome.IsSuccess()) {
         auto& retrieved_file = outcome.GetResultWithOwnership().GetBody();
+        auto folder_path = photo.FileName();
+        folder_path = folder_path.substr(0, folder_path.rfind('/'));
+        fs::create_directories(fs::current_path().string() + '/' + folder_path);
         std::string filename = photo.FileName();
         std::ofstream output_file(filename.c_str(), std::ios::binary | std::ios::out);
-        output_file << retrieved_file.rdbuf();
+        if (output_file.is_open()) {
+            output_file << retrieved_file.rdbuf();
+        } else {
+            throw std::runtime_error("File not open");
+        }
     } else {
         throw std::runtime_error(outcome.GetError().GetMessage());
     }

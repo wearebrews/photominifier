@@ -1,6 +1,9 @@
 build/
 lib/
 aws/
+test/
+img/
+test.jpeg
 
 
 # Prerequisites

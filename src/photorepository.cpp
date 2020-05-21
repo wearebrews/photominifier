@@ -1,4 +1,4 @@
-#include "s3.hpp"
+#include "photorepository.hpp"
 #include "aws/core/Aws.h"
 #include "aws/core/auth/AWSCredentialsProvider.h"
 #include "aws/core/client/ClientConfiguration.h"
@@ -43,7 +43,7 @@ std::vector<Photograph> Repository::List(std::string prefix) {
     return ListPhotographs(prefix, this->s3_client_);
 }
 
-const std::vector<char> Repository::Download(const Photograph& photo) {
+const std::vector<unsigned char> Repository::Download(const Photograph& photo) {
     namespace fs =  std::experimental::filesystem;
     Aws::S3::Model::GetObjectRequest request;
     request.WithBucket(BUCKET).WithKey(photo.FileName());
@@ -53,7 +53,7 @@ const std::vector<char> Repository::Download(const Photograph& photo) {
     }
     auto retrieved_file = outcome.GetResultWithOwnership();
     auto size = retrieved_file.GetContentLength();
-    std::vector<char> buf;
+    std::vector<unsigned char> buf;
     buf.reserve(size);
     auto* stream = retrieved_file.GetBody().rdbuf();
     buf.insert(buf.begin(), std::istreambuf_iterator(stream), std::istreambuf_iterator<char>());

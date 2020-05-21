@@ -23,6 +23,6 @@ namespace photorepository {
             Repository(std::string token, std::string secret, std::string endpoint = "https://fra1.digitaloceanspaces.com");
             ~Repository();
             std::vector<Photograph> List(std::string = "");
-            const std::vector<char> Download(const Photograph& photo);
+            const std::vector<unsigned char> Download(const Photograph& photo);
     };
 }

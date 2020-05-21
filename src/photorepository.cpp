@@ -13,6 +13,7 @@
 
 
 #include <experimental/filesystem>
+#include <streambuf>
 
 
 using namespace photorepository;
@@ -42,26 +43,21 @@ std::vector<Photograph> Repository::List(std::string prefix) {
     return ListPhotographs(prefix, this->s3_client_);
 }
 
-std::tuple<std::shared_ptr<char>, uint32_t> Repository::Download(const Photograph& photo) {
+const std::vector<char> Repository::Download(const Photograph& photo) {
     namespace fs =  std::experimental::filesystem;
     Aws::S3::Model::GetObjectRequest request;
     request.WithBucket(BUCKET).WithKey(photo.FileName());
     auto outcome = this->s3_client_.GetObject(request);
-    if (outcome.IsSuccess()) {
-        auto& retrieved_file = outcome.GetResultWithOwnership().GetBody();
-        auto folder_path = photo.FileName();
-        folder_path = folder_path.substr(0, folder_path.rfind('/'));
-        fs::create_directories(fs::current_path().string() + '/' + folder_path);
-        std::string filename = photo.FileName();
-        std::ofstream output_file(filename.c_str(), std::ios::binary | std::ios::out);
-        if (output_file.is_open()) {
-            output_file << retrieved_file.rdbuf();
-        } else {
-            throw std::runtime_error("File not open");
-        }
-    } else {
+    if (!outcome.IsSuccess()) {
         throw std::runtime_error(outcome.GetError().GetMessage());
     }
+    auto retrieved_file = outcome.GetResultWithOwnership();
+    auto size = retrieved_file.GetContentLength();
+    std::vector<char> buf;
+    buf.reserve(size);
+    auto* stream = retrieved_file.GetBody().rdbuf();
+    buf.insert(buf.begin(), std::istreambuf_iterator(stream), std::istreambuf_iterator<char>());
+    return buf;
 }
 
 

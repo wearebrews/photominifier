@@ -14,7 +14,8 @@ int main() {
         std::cout << p.FileName() << std::endl;
         if (name[name.length()-1] != '/') {
             try {
-                rep.Download(p);
+                auto buffer = rep.Download(p);
+                std::cout << buffer.size() / (1024.0*1024.0) << std::endl;
             } catch(const std::exception& e) {
                 std::cout << "Error: " << e.what() << std::endl;
             }

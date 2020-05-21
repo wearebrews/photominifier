@@ -61,7 +61,11 @@
 			"thread": "cpp",
 			"cinttypes": "cpp",
 			"typeinfo": "cpp",
-			"filesystem": "cpp"
+			"filesystem": "cpp",
+			"codecvt": "cpp",
+			"numeric": "cpp",
+			"random": "cpp",
+			"bit": "cpp"
 		}
 	}
 }

@@ -6,10 +6,11 @@
 #include <tuple>
 
 namespace photorepository {
+    class Repository;
     class Photograph {
         private:
-            char* data_ = nullptr;
             std::string file_name_;
+            Repository* repository_ = nullptr;
         public:
             Photograph(std::string file_name = "") : file_name_(file_name) {}
             const std::string FileName() const { return file_name_;}
@@ -22,6 +23,6 @@ namespace photorepository {
             Repository(std::string token, std::string secret, std::string endpoint = "https://fra1.digitaloceanspaces.com");
             ~Repository();
             std::vector<Photograph> List(std::string = "");
-            std::tuple<std::shared_ptr<char>, uint32_t> Download(const Photograph& photo);
+            const std::vector<char> Download(const Photograph& photo);
     };
 }

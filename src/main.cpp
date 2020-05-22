@@ -24,6 +24,7 @@ int main() {
                 auto high = std::vector<unsigned char>(buffer.size());
                 auto medium = std::vector<unsigned char>(buffer.size());
                 auto low = std::vector<unsigned char>(buffer.size());
+                auto instagram = std::vector<unsigned char>(buffer.size());
 
                 auto optimize = [&buffer = std::as_const(buffer)](std::vector<unsigned char>& out, int quality = 75, int pixels = -1) {
                     jpeg::optimize(buffer, out, quality, pixels);
@@ -32,10 +33,12 @@ int main() {
                 std::thread t_high(optimize, std::ref(high));
                 std::thread t_medium(optimize, std::ref(medium), 75, 1920*1080);
                 std::thread t_low(optimize, std::ref(low), 50, 1000*1000);
+                std::thread t_instagram(optimize, std::ref(instagram), 50, 500*500);
 
                 t_high.join();
                 t_medium.join();
                 t_low.join();
+                t_instagram.join();
                 auto filename = [old = p.FileName()](std::string quality) {
                     auto f = old;
                     f.replace(f.find("fullsize"), std::string("fullsize").size(), quality);
@@ -44,6 +47,7 @@ int main() {
                 rep.Upload(high, {filename("high")});
                 rep.Upload(medium, {filename("medium")});
                 rep.Upload(low, {filename("low")});
+                rep.Upload(instagram, {filename("instagram")});
             } catch(const std::exception& e) {
                 std::cout << "Error: " << e.what() << std::endl;
             }

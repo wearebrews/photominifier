@@ -5,6 +5,7 @@
 #include <memory>
 #include <fstream>
 #include "optimize_jpeg.hpp"
+#include <thread>
 
 
 const std::string TOKEN = []() { auto t = getenv("TOKEN");  return t ? t : "";}();
@@ -20,13 +21,29 @@ int main() {
         if (name[name.length()-1] != '/') {
             try {
                 auto buffer = rep.Download(p);
-                double before = buffer.size();
-                std::cout << "Size before: " << before / (1024.0*1024.0) << std::endl;
-                jpeg::optimize(buffer);
-                std::cout << "Size after: " << buffer.size() / (1024.0*1024.0) << " (" << (1 - buffer.size()  / before)*100 << "% reduction)" << std::endl;
-                std::ofstream s;
-                s.open("test.jpeg", std::ios::out | std::ios::binary);
-                s.write((const char*) buffer.data(), buffer.size());
+                auto high = std::vector<unsigned char>(buffer.size());
+                auto medium = std::vector<unsigned char>(buffer.size());
+                auto low = std::vector<unsigned char>(buffer.size());
+
+                auto optimize = [&buffer = std::as_const(buffer)](std::vector<unsigned char>& out, int quality = 75, int pixels = -1) {
+                    jpeg::optimize(buffer, out, quality, pixels);
+                };
+
+                std::thread t_high(optimize, std::ref(high));
+                std::thread t_medium(optimize, std::ref(medium), 75, 1920*1080);
+                std::thread t_low(optimize, std::ref(low), 50, 1000*1000);
+
+                t_high.join();
+                t_medium.join();
+                t_low.join();
+                auto filename = [old = p.FileName()](std::string quality) {
+                    auto f = old;
+                    f.replace(f.find("fullsize"), std::string("fullsize").size(), quality);
+                    return f;
+                };
+                rep.Upload(high, {filename("high")});
+                rep.Upload(medium, {filename("medium")});
+                rep.Upload(low, {filename("low")});
             } catch(const std::exception& e) {
                 std::cout << "Error: " << e.what() << std::endl;
             }

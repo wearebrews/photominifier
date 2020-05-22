@@ -7,7 +7,8 @@
 
 #include "aws/s3/model/ListObjectsRequest.h"
 #include "aws/s3/model/GetObjectRequest.h"
-
+#include "aws/s3/model/PutObjectRequest.h"
+#include "aws/s3/model/AccessControlPolicy.h"
 #include <algorithm>
 #include <tuple>
 
@@ -58,6 +59,24 @@ const std::vector<unsigned char> Repository::Download(const Photograph& photo) {
     auto* stream = retrieved_file.GetBody().rdbuf();
     buf.insert(buf.begin(), std::istreambuf_iterator(stream), std::istreambuf_iterator<char>());
     return buf;
+}
+
+void Repository::Upload(const std::vector<unsigned char>& data, Photograph photo) {
+    Aws::S3::Model::PutObjectRequest request;
+    request
+        .WithBucket(BUCKET)
+        .WithKey(photo.FileName())
+        .WithACL(Aws::S3::Model::ObjectCannedACL::public_read);
+        
+    auto stream = Aws::MakeShared<Aws::StringStream>("tag", std::stringstream::in | std::stringstream::out | std::stringstream::binary);
+    request.SetBody(stream);
+    stream->write(reinterpret_cast<const char*>(data.data()), data.size());
+    request.SetBody(stream);
+    request.SetContentType("image/jpeg");
+    auto result = this->s3_client_.PutObject(request);
+    if (!result.IsSuccess()) {
+        throw std::runtime_error("Unable to upload");
+    }
 }
 
 

@@ -24,5 +24,6 @@ namespace photorepository {
             ~Repository();
             std::vector<Photograph> List(std::string = "");
             const std::vector<unsigned char> Download(const Photograph& photo);
+            void Upload(const std::vector<unsigned char>& body, Photograph photo);
     };
 }

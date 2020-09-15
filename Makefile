@@ -22,23 +22,13 @@ install_dependencies:
 
 build: build/photominifier
 
-build/photominifier: CMakeLists.txt $(SRC_FILES) $(INCLUDE_FILES) | $(BUILD_DIR) 
-	cmake -H. -Bbuild -DCMAKE_TOOLCHAIN_FILE=vcpkg/scripts/buildsystems/vcpkg.cmake -DCMAKE_BUILD_TYPE=Release
+build/photominifier: CMakeLists.txt $(SRC_FILES) $(INCLUDE_FILES) | $(BUILD_DIR) toolchain
+	cmake -H. -Bbuild -GNinja -DCMAKE_TOOLCHAIN_FILE=vcpkg/scripts/buildsystems/vcpkg.cmake -DCMAKE_BUILD_TYPE=Release
 	cmake --build build
 
 
-submodules:
-	git submodule update --init --recursive
-
 mozjpeg: build/mozjpeg
 
-
-toolchain: 
-	./vcpkg/vcpkg install mozjpeg
-	./vcpkg/vcpkg install google-cloud-cpp
-
-vcpkg/vcpkg: submodules
-	./vcpkg/bootstrap-vcpkg.sh -useSystemBinaries
 
 clean:
 	rm -rf build

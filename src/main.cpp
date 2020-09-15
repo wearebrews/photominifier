@@ -13,7 +13,6 @@ const std::string SECRET = [](){ auto s = getenv("SECRET"); return s ? s : "";}(
 
 
 int main() {
-    auto rep = photorepository::Repository(TOKEN, SECRET);
     auto photos = rep.List("img/fullsize");
     for (auto& p : photos) {
         auto name = p.FileName();
@@ -44,10 +43,6 @@ int main() {
                     f.replace(f.find("fullsize"), std::string("fullsize").size(), quality);
                     return f;
                 };
-                rep.Upload(high, {filename("high")});
-                rep.Upload(medium, {filename("medium")});
-                rep.Upload(low, {filename("low")});
-                rep.Upload(instagram, {filename("instagram")});
             } catch(const std::exception& e) {
                 std::cout << "Error: " << e.what() << std::endl;
             }

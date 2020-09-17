@@ -31,4 +31,4 @@ file(GLOB SOURCES src/*.cpp)
 # compiles the files defined by SOURCES to generante the executable defined by EXEC
 add_executable(photominifier ${SOURCES})
 
-target_link_libraries(photominifier PRIVATE ${CURL_LINK_LIBRARIES} storage_client ${TURBO_RELEASE} -lstdc++fs)
+target_link_libraries(photominifier PRIVATE ${CURL_LINK_LIBRARIES} storage_client ${TURBO_RELEASE} -static-libstdc++ -static-libgcc)

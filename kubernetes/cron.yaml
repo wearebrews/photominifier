@@ -1,0 +1,27 @@
+apiVersion: batch/v1beta1
+kind: CronJob
+metadata:
+  name: photominifier
+spec:
+  schedule: "* */3 * * *"
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      template:
+        spec:
+            volumes: 
+            - name: gcloud-key
+              secret: 
+                secretName: verussensus-storage-key
+            containers:
+            - name: photominifier
+              image: haavardm/photominifier
+              imagePullPolicy: Always
+              volumeMounts: 
+              - name: gcloud-key
+                mountPath: "/var/secrets/google"
+              env: 
+              - name: GOOGLE_APPLICATION_CREDENTIALS
+                value: /var/secrets/google/key.json
+            restartPolicy: Never

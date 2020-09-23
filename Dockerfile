@@ -1,27 +1,21 @@
-FROM alpine:3.10 as build
+FROM haavardm/google-cloud-cpp:alpine-3.10 as build
 
-ARG MAKE_PARALELL=1
-WORKDIR /usr/app
-RUN apk --update add \
- build-base \
- musl-dev \
- curl-dev \
- curl-static \
- cmake \
- git \
- zlib-dev \
- openssl-dev \
- nasm
+RUN apk add nasm
+RUN vcpkg/vcpkg install mozjpeg --triplet x64-linux
+
+WORKDIR app
+
 COPY src src
 COPY include include
-COPY Makefile Makefile
-COPY .git .git
 COPY .gitmodules .gitmodules
 COPY CMakeLists.txt CMakeLists.txt
-RUN make build -j ${MAKE_PARALELL}
+RUN cmake -H. -Bbuild -GNinja -DCMAKE_TOOLCHAIN_FILE=/vcpkg/scripts/buildsystems/vcpkg.cmake -DCMAKE_BUILD_TYPE=Release
+RUN cmake --build build
 
 FROM alpine:3.10
-WORKDIR /usr/app 
-COPY --from=build /usr/app/build/photominifier main
-RUN apk --update add libcurl libstdc++
-CMD ["./main"] 
+WORKDIR app
+COPY --from=build /app/build/photominifier main
+
+RUN apk update && apk add ca-certificates && rm -rf /var/cache/apk/*
+
+CMD ["./main"]

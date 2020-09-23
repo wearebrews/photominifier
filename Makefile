@@ -7,12 +7,11 @@ SRC_FILES := $(wildcard $(SRC_DIR)/*.cpp)
 INCLUDE_FILES := $(wildcard $(INCLUDE_FILES)/*.hpp)
 AWS_LIBRARIES="s3"
 
-LIBRARIES = aws-sdk-cpp mozjpeg
-
 .PHONY: install_dependencies
 .PHONY: submodules
 .PHONY: clean
 .PHONY: build
+.PHONY: toolchain
 
 $(BUILD_DIR):
 	mkdir -p build
@@ -23,37 +22,13 @@ install_dependencies:
 
 build: build/photominifier
 
-build/photominifier: CMakeLists.txt $(SRC_FILES) $(INCLUDE_FILES) $(LIBRARIES) | $(BUILD_DIR) 
-	cd build && cmake ${PROJECT_DIR} \
-	-DCMAKE_INSTALL_PREFIX=$(BUILD_DIR)/install \
-	&& $(MAKE) && $(MAKE) install
+build/photominifier: CMakeLists.txt $(SRC_FILES) $(INCLUDE_FILES) | $(BUILD_DIR) toolchain
+	cmake -H. -Bbuild -GNinja -DCMAKE_TOOLCHAIN_FILE=vcpkg/scripts/buildsystems/vcpkg.cmake -DCMAKE_BUILD_TYPE=Release
+	cmake --build build
 
-aws-sdk-cpp: build/aws-sdk-cpp
-
-build/aws-sdk-cpp: | submodules $(BUILD_DIR)
-	mkdir -p build/aws-sdk-cpp
-	cd build/aws-sdk-cpp && cmake $(PROJECT_DIR)/aws-sdk-cpp \
-	-DBUILD_ONLY=$(AWS_LIBRARIES) \
-	-DBUILD_SHARED_LIBS=OFF \
-	-DCMAKE_BUILD_TYPE=Release \
-	-DCUSTOM_MEMORY_MANAGEMENT=OFF \
-	-DCMAKE_INSTALL_PREFIX=$(BUILD_DIR)/install \
-	-DENABLE_UNITY_BUILD=ON && $(MAKE) && $(MAKE) install
-
-submodules:
-	git submodule update --init --recursive
 
 mozjpeg: build/mozjpeg
 
-build/mozjpeg: | submodules $(BUILD_DIR)
-	mkdir -p build/mozjpeg
-	cd build/mozjpeg && cmake -G"Unix Makefiles" \
-	 -DBUILD_SHARED_LIBS=OFF \
-	 -DENABLE_SHARED=OFF \
-	 -DPNG_SUPPORTED=OFF \
-	 -DCMAKE_INSTALL_PREFIX=$(BUILD_DIR)/install \
-	 -DREQUIRE_SIMD=TRUE \
-	  $(PROJECT_DIR)/mozjpeg && make && make install
 
 clean:
 	rm -rf build

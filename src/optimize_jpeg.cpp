@@ -51,7 +51,7 @@ void jpeg::optimize(std::vector<unsigned char>& in, int quality, int pixels) {
     jpeg::optimize(in, in, quality, pixels);
 }
 
-void jpeg::optimize(const std::vector<unsigned char>& in, std::vector<unsigned char>& out, int quality, int pixels) {
+void jpeg::optimize(const std::vector<unsigned char>& in, std::vector<unsigned char>& out, const int quality, const int pixels) {
     int in_sub_samp, in_color_space;
 
     unsigned long jpeg_size;

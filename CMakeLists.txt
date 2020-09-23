@@ -11,27 +11,24 @@ if(NOT BUILD_SHARED_LIBS)
   set(BUILD_SHARED_LIBS OFF)
 endif()
 
-if(NOT CMAKE_BUILD_TYPE)
-  set(CMAKE_BUILD_TYPE Debug)
-endif()
-
 set(CMAKE_CXX_FLAGS "-Wall -Wextra")
 set(CMAKE_CXX_FLAGS_RELEASE "-O3")
 
-include_directories(include)
-include_directories(build/install/include)
 
-find_package(AWSSDK REQUIRED COMPONENTS s3)
 find_package(JPEG REQUIRED)
 find_package(CURL REQUIRED)
+find_package(storage_client REQUIRED)
+
+find_library(TURBO_RELEASE turbojpeg)
+
+include_directories(${JPEG_INCLUDE_DIR})
+include_directories(include)
 
 
 # puts all .cpp files inside src to the SOURCES variable
 file(GLOB SOURCES src/*.cpp)
-file(GLOB BUILD_STATIC_LIBS build/install/lib/*.a)
 
 # compiles the files defined by SOURCES to generante the executable defined by EXEC
 add_executable(photominifier ${SOURCES})
-message(${BUILD_STATIC_LIBS})
 
-target_link_libraries(photominifier PRIVATE ${AWSSDK_LINK_LIBRARIES} ${CURL_LINK_LIBRARIES} -lstdc++fs ${BUILD_STATIC_LIBS})
+target_link_libraries(photominifier PRIVATE ${CURL_LINK_LIBRARIES} storage_client ${TURBO_RELEASE} -static-libstdc++ -static-libgcc)

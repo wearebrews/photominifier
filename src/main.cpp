@@ -1,56 +1,121 @@
 #include <iostream>
 #include <stdlib.h>
 #include "curl/curl.h"
-#include "photorepository.hpp"
 #include <memory>
+#include "google/cloud/storage/client.h"
 #include <fstream>
 #include "optimize_jpeg.hpp"
 #include <thread>
+#include <array>
 
+namespace gcs = google::cloud::storage;
 
-const std::string TOKEN = []() { auto t = getenv("TOKEN");  return t ? t : "";}();
-const std::string SECRET = [](){ auto s = getenv("SECRET"); return s ? s : "";}(); 
+constexpr const char *originals_prefix = "images/fullsize/";
+constexpr const char *low_prefix = "images/low/";
+constexpr const char *medium_prefix = "images/medium/";
+constexpr const char *high_prefix = "images/high/";
+constexpr const char *thumbnail_prefix = "images/thumbnail/";
+constexpr const char *bucket = "verussensus";
 
+struct quality
+{
+    std::string prefix;
+    int quality;
+    int pixels;
+};
 
-int main() {
-    auto rep = photorepository::Repository(TOKEN, SECRET);
-    auto photos = rep.List("img/fullsize");
-    for (auto& p : photos) {
-        auto name = p.FileName();
-        std::cout << p.FileName() << std::endl;
-        if (name[name.length()-1] != '/') {
-            try {
-                auto buffer = rep.Download(p);
-                auto high = std::vector<unsigned char>(buffer.size());
-                auto medium = std::vector<unsigned char>(buffer.size());
-                auto low = std::vector<unsigned char>(buffer.size());
-                auto instagram = std::vector<unsigned char>(buffer.size());
+const std::array<quality, 4> target_folders = {quality{thumbnail_prefix, 40, 800 * 800}, {low_prefix, 50, 1200 * 1080}, {medium_prefix, 75, 2560 * 1440}, {high_prefix, 90, -1}};
 
-                auto optimize = [&buffer = std::as_const(buffer)](std::vector<unsigned char>& out, int quality = 75, int pixels = -1) {
-                    jpeg::optimize(buffer, out, quality, pixels);
-                };
+int main()
+{
+    google::cloud::StatusOr<gcs::Client> client_status = gcs::Client::CreateDefaultClient().value();
+    if (!client_status)
+    {
+        std::cerr << "Failed to create client: " << client_status.status() << "\n";
+        return 1;
+    }
 
-                std::thread t_high(optimize, std::ref(high));
-                std::thread t_medium(optimize, std::ref(medium), 75, 1920*1080);
-                std::thread t_low(optimize, std::ref(low), 50, 1000*1000);
-                std::thread t_instagram(optimize, std::ref(instagram), 50, 500*500);
+    gcs::Client client = client_status.value();
 
-                t_high.join();
-                t_medium.join();
-                t_low.join();
-                t_instagram.join();
-                auto filename = [old = p.FileName()](std::string quality) {
-                    auto f = old;
-                    f.replace(f.find("fullsize"), std::string("fullsize").size(), quality);
-                    return f;
-                };
-                rep.Upload(high, {filename("high")});
-                rep.Upload(medium, {filename("medium")});
-                rep.Upload(low, {filename("low")});
-                rep.Upload(instagram, {filename("instagram")});
-            } catch(const std::exception& e) {
-                std::cout << "Error: " << e.what() << std::endl;
+    auto originals = client.ListObjects(bucket, gcs::Prefix{originals_prefix});
+    for (auto &obj : originals)
+    {
+        if (!obj)
+        {
+            std::cerr << obj.status() << std::endl;
+        }
+        std::string original_name = obj.value().name();
+        size_t original_size = obj.value().size();
+        std::string filename = original_name.substr(std::string(originals_prefix).length());
+
+        if (filename == "")
+        {
+            continue;
+        }
+
+        std::vector<unsigned char> original_buffer;
+        std::vector<std::thread> threads;
+
+        for (auto &target : target_folders)
+        {
+            auto prefix = target.prefix;
+            int quality = target.quality;
+            int pixels = target.pixels;
+            auto name = prefix + filename;
+            auto ok = client.GetObjectMetadata(bucket, name);
+            if (ok)
+            {
+                continue;
             }
+
+            std::cout << name << " is missing, creating" << std::endl;
+
+            if (!original_buffer.size())
+            {
+                auto reader = client.ReadObject(bucket, original_name);
+                if (reader.bad())
+                {
+                    std::cerr << reader.status() << std::endl;
+                    return 1;
+                }
+                original_buffer.reserve(original_size);
+                std::istreambuf_iterator<char> eos;
+                auto it = std::istreambuf_iterator<char>{reader};
+                while (it != eos && original_buffer.size() < original_size)
+                {
+                    int8_t value = *it++;
+                    uint8_t tmp;
+                    std::memcpy(&tmp, &value, sizeof(tmp));
+                    original_buffer.push_back(tmp);
+                }
+            }
+
+            std::thread t([&original_buffer, client, quality, name, pixels]() {
+                std::vector<unsigned char> out(original_buffer.size());
+                jpeg::optimize(std::as_const(original_buffer), out, quality, pixels);
+                auto c = client.CreateDefaultClient();
+                auto metadata = gcs::ObjectMetadata();
+                metadata.set_content_type("image/jpeg");
+                metadata.set_content_encoding("binary");
+                metadata.set_cache_control("max-age=604800");
+                auto writer = c->WriteObject(bucket,
+                                             name,
+                                             gcs::WithObjectMetadata(metadata),
+                                             gcs::PredefinedAcl::PublicRead(),
+                                             gcs::UploadContentLength(out.size()));
+                std::ofstream file;
+                for (auto &c : out)
+                {
+                    writer << c;
+                }
+                writer.Close();
+            });
+
+            threads.emplace_back(std::move(t));
+        }
+        for (auto &t : threads)
+        {
+            t.join();
         }
     }
     return 0;
